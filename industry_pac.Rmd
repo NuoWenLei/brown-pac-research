@@ -44,6 +44,10 @@ ggplot(clean_data, aes(x = year, y = total)) +
   geom_line() 
 ```
 
+```{r hist-plot, echo = FALSE}
+ggplot(clean_data, aes(x = total)) +
+  geom_histogram(bins = 8)
+```
 
 
 

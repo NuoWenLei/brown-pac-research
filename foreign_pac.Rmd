@@ -39,3 +39,8 @@ ggplot(clean_data, aes(x = year, y = amount, color = party)) +
     values = c("blue", "red")
   )
 ```
+
+```{r hist-plot, echo = FALSE}
+ggplot(clean_data, aes(x = total)) +
+  geom_histogram(bins = 8)
+```

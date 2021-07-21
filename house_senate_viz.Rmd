@@ -24,6 +24,7 @@ clean_data = house_senate_data %>%
   ) %>% 
   group_by(pos_type, year) %>% 
   summarize(party = party,
+            seat_total = seats,
             seats = seats / sum(seats),
             .groups = "drop")
 clean_data
@@ -37,4 +38,13 @@ ggplot(clean_data, aes(x = year, y = seats, color = party)) +
     values = c("blue", "red")
   ) +
   ylim(c(0.25, .75))
+```
+
+
+
+
+```{r hist-plot, echo = FALSE}
+ggplot(clean_data, aes(x = seat_total)) +
+  facet_wrap(~pos_type) + 
+  geom_histogram(bins = 8)
 ```
