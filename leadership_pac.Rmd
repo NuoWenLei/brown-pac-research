@@ -1,0 +1,41 @@
+---
+title: "leadership_pac"
+author: "Nuo Wen Lei"
+date: "7/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Party donation over the years
+
+
+```{r party-donation-clean, echo = FALSE}
+leadership_data = read_csv("data/leadership_pac_data/clean_data.csv")
+
+clean_data = leadership_data %>% 
+  group_by(year) %>% 
+  summarize(total = sum(dem) + sum(repub),
+            dem = sum(dem),
+            repub = sum(repub),
+            .groups = "drop") %>%
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total) %>% 
+  pivot_longer(
+    cols = c(dem_percent, repub_percent),
+    names_to = "party",
+    values_to = "amount"
+  )
+```
+
+```{r donation-plot, echo = FALSE}
+ggplot(clean_data, aes(x = year, y = amount, color = party)) + 
+  geom_line() + 
+  scale_color_manual(
+    values = c("blue", "red")
+  )
+```
+

@@ -1,0 +1,40 @@
+---
+title: "house_senate_viz"
+author: "Nuo Wen Lei"
+date: "7/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Party donation over the years
+
+
+```{r clean-data, echo = FALSE}
+house_senate_data = read_csv("data/house_senate.csv")
+
+clean_data = house_senate_data %>% 
+  pivot_longer(cols = -year, names_to = "position", values_to = "seats") %>% 
+  mutate(
+    party = gsub("\\_.*", "", position),
+    pos_type = gsub(".*\\_", "", substr(position, 1, nchar(position)-2))
+  ) %>% 
+  group_by(pos_type, year) %>% 
+  summarize(party = party,
+            seats = seats / sum(seats),
+            .groups = "drop")
+clean_data
+```
+
+```{r donation-plot, echo = FALSE}
+ggplot(clean_data, aes(x = year, y = seats, color = party)) + 
+  facet_wrap(~pos_type) +
+  geom_line() + 
+  scale_color_manual(
+    values = c("blue", "red")
+  ) +
+  ylim(c(0.25, .75))
+```

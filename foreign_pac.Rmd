@@ -1,0 +1,41 @@
+---
+title: "foreign_pac"
+author: "Nuo Wen Lei"
+date: "7/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Party donation over the years
+
+
+```{r party-donation-clean, echo = FALSE}
+foreign_data = read_csv("data/foreign_pac_data/clean_data.csv")
+
+clean_data = foreign_data %>% 
+  group_by(year) %>% 
+  summarize(total = sum(dems_sum) + sum(repubs_sum),
+            dem = sum(dems_sum),
+            repub = sum(repubs_sum),
+            .groups = "drop") %>%
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total) %>% 
+  pivot_longer(
+    cols = c(dem_percent, repub_percent),
+    names_to = "party",
+    values_to = "amount"
+  )
+clean_data
+```
+
+```{r donation-plot, echo = FALSE}
+ggplot(clean_data, aes(x = year, y = amount, color = party)) + 
+  geom_line() + 
+  scale_color_manual(
+    values = c("blue", "red")
+  )
+```
