@@ -1,0 +1,253 @@
+---
+title: "pearson_correlation_page"
+author: "Nuo Wen Lei"
+date: "7/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(plotly)
+knitr::opts_chunk$set(echo = TRUE)
+
+alpha = .05
+```
+
+```{r load-house_senate, echo = FALSE}
+house_senate_data = read_csv("../data/house_senate.csv")
+
+house_senate_clean_data = house_senate_data %>% 
+  pivot_longer(cols = -year, names_to = "position", values_to = "seats") %>% 
+  mutate(
+    party = gsub("\\_.*", "", position),
+    pos_type = gsub(".*\\_", "", substr(position, 1, nchar(position)-2))
+  ) %>% 
+  group_by(pos_type, year) %>% 
+  summarize(party = party,
+            seat_total = seats,
+            seats = seats / sum(seats),
+            .groups = "drop")
+```
+
+```{r load-leadership, echo = FALSE}
+leadership_data = read_csv("../data/leadership_pac_data/clean_data.csv")
+
+leadership_clean_data = leadership_data %>% 
+  group_by(year) %>% 
+  summarize(total = sum(dem) + sum(repub),
+            dem = sum(dem),
+            repub = sum(repub),
+            .groups = "drop") %>%
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total) %>% 
+  pivot_longer(
+    cols = c(dem_percent, repub_percent),
+    names_to = "party",
+    values_to = "amount"
+  )
+```
+
+```{r load-foreign, echo = FALSE}
+foreign_data = read_csv("../data/foreign_pac_data/clean_data.csv")
+
+foreign_clean_data = foreign_data %>% 
+  group_by(year) %>% 
+  summarize(total = sum(dems_sum) + sum(repubs_sum),
+            dem = sum(dems_sum),
+            repub = sum(repubs_sum),
+            .groups = "drop") %>%
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total) %>% 
+  pivot_longer(
+    cols = c(dem_percent, repub_percent),
+    names_to = "party",
+    values_to = "amount"
+  )
+
+```
+
+```{r load-industry, echo = FALSE}
+industry_data = read_csv("../data/industry_donation_data/clean_data.csv")
+
+industry_clean_data = industry_data %>% 
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total)
+
+industry_clean_data
+
+```
+
+## Use Pearson Correlation to Compare Each PAC Kind to House Senate
+
+### Leadership PACs
+
+#### House of Representatives
+
+```{r echo = FALSE}
+leadership_house_correlation_test = cor.test(
+  leadership_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount),
+  house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats))
+
+
+sprintf("Correlation Between Leadership PAC Donations by Party and House of Representatives Party Distribution is %.5f with p-value %.5f", 
+        leadership_house_correlation_test$estimate, 
+        leadership_house_correlation_test$p.value)
+```
+
+#### Senate
+
+```{r echo = FALSE}
+leadership_senate_correlation_test = cor.test(
+  leadership_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount),
+  house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats))
+
+
+sprintf("Correlation Between Leadership PAC Donations by Party and Senate Party Distribution is %.5f with p-value %.5f", 
+        leadership_senate_correlation_test$estimate,
+        leadership_senate_correlation_test$p.value)
+```
+
+### Foreign PACs
+
+#### House of Representatives
+
+```{r echo = FALSE}
+foreign_house_correlation_test = cor.test(
+  foreign_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount),
+  house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats))
+
+
+sprintf("Correlation Between Foreign PAC Donations by Party and House of Representatives Party Distribution is %.5f with p-value %.5f", 
+        foreign_house_correlation_test$estimate,
+        foreign_house_correlation_test$p.value)
+```
+
+#### Senate
+
+```{r echo = FALSE}
+foreign_senate_correlation_test = cor.test(
+  foreign_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount),
+  house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats))
+
+
+sprintf("Correlation Between Foreign PAC Donations by Party and Senate Party Distribution is %.5f with p-value %.5f",
+        foreign_senate_correlation_test$estimate,
+        foreign_senate_correlation_test$p.value)
+```
+
+### PACs by Industry
+
+Create a tibble with the correlation, ttest, p-value, CI data for each different sector
+
+#### House of Representatives
+
+```{r echo = FALSE}
+industry_house_corr_tbl = tibble(
+  industry_name = character(),
+  correlation = numeric(),
+  t_statistic = numeric(),
+  p_value = numeric(),
+  average_total_donation = numeric(),
+  CI.0 = numeric(),
+  CI.1 = numeric(),
+  CI_reject = character(),
+  p_reject = character()
+)
+
+unique_industries = industry_clean_data$industry_name %>% unique()
+
+for (ind in unique_industries){
+  if (length(industry_clean_data %>%
+      filter(industry_name == ind) %>%
+      pull(dem_percent)) != length(house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats))){
+    next
+    }
+  curr_cor = cor.test(
+    industry_clean_data %>%
+      filter(industry_name == ind) %>%
+      pull(dem_percent),
+    house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+  )
+  
+  industry_house_corr_tbl = rbind(industry_house_corr_tbl,
+                                  c(
+                                    industry_name = ind,
+                                    correlation = curr_cor$estimate,
+                                    t_statistic = curr_cor$statistic,
+                                    p_value = curr_cor$p.value,
+                                    average_total_donation = mean(industry_clean_data %>%
+      filter(industry_name == ind) %>%
+      pull(total)),
+                                    CI.0 = curr_cor$conf.int[[1]],
+                                    CI.1 = curr_cor$conf.int[[2]],
+                                    CI_reject = if_else(curr_cor$conf.int[[1]] < 0 && 0 < curr_cor$conf.int[[2]], "null", "alternative")
+                                  ,
+                                    p_reject = if_else(curr_cor$p.value < alpha,
+                                                       "alternative",
+                                                       "null")))
+  
+}
+
+
+colnames(industry_house_corr_tbl) = c("industry_name",
+                                      "correlation",
+                                      "t_statistic",
+                                      "p_value",
+                                      "average_total_donation",
+                                      "CI.0",
+                                      "CI.1",
+                                      "CI_reject",
+                                      "p_reject")
+
+industry_house_corr_tbl = industry_house_corr_tbl %>% 
+  mutate(correlation = parse_number(correlation),
+         t_statistic = parse_number(t_statistic),
+         p_value = parse_number(p_value),
+         average_total_donation = parse_number(average_total_donation),
+         CI.0 = parse_number(CI.0),
+         CI.1 = parse_number(CI.1))
+```
+
+
+```{r industry-influence-distribution-plot, echo = FALSE}
+plt = ggplot(industry_house_corr_tbl, aes(x = p_value, y = average_total_donation)) +
+  geom_point(aes(text = paste0("Industry: ", industry_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0))
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+
+
+
+
+
