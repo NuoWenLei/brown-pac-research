@@ -1,7 +1,7 @@
 ---
-title: "pearson_correlation_page"
+title: "mannwhitneyu_test_page"
 author: "Nuo Wen Lei"
-date: "7/22/2021"
+date: "7/23/2021"
 output: html_document
 ---
 
@@ -77,44 +77,47 @@ industry_clean_data
 
 ```
 
-## Use Pearson Correlation to Compare Each PAC Kind to House Senate
+
+## Use Mann-Whitney U Test to Compare Each PAC Kind to House Senate
 
 ### Leadership PACs
 
 #### House of Representatives
 
 ```{r echo = FALSE}
-leadership_house_correlation_test = cor.test(
+leadership_house_w_test = wilcox.test(
   leadership_clean_data %>%
     filter(party == "dem_percent") %>%
     pull(amount),
   house_senate_clean_data %>% 
     filter(party == "democratic",
            pos_type == "house") %>% 
-    pull(seats))
+    pull(seats),
+    conf.int = TRUE)
 
 
-sprintf("Correlation Between Leadership PAC Donations by Party and House of Representatives Party Distribution is %.5f with p-value %.5f", 
-        leadership_house_correlation_test$estimate, 
-        leadership_house_correlation_test$p.value)
+sprintf("Wilcox Test Statistic Between Leadership PAC Donations by Party and House of Representatives Party Distribution is %.5f with p-value %.5f", 
+        leadership_house_w_test$statistic, 
+        leadership_house_w_test$p.value)
 ```
 
 #### Senate
 
 ```{r echo = FALSE}
-leadership_senate_correlation_test = cor.test(
+leadership_senate_w_test = wilcox.test(
   leadership_clean_data %>%
     filter(party == "dem_percent") %>%
     pull(amount),
   house_senate_clean_data %>% 
     filter(party == "democratic",
            pos_type == "senate") %>% 
-    pull(seats))
+    pull(seats),
+    conf.int = TRUE)
 
 
-sprintf("Correlation Between Leadership PAC Donations by Party and Senate Party Distribution is %.5f with p-value %.5f", 
-        leadership_senate_correlation_test$estimate,
-        leadership_senate_correlation_test$p.value)
+sprintf("Wilcox Test Statistic Between Leadership PAC Donations by Party and Senate Party Distribution is %.5f with p-value %.5f", 
+        leadership_senate_w_test$statistic,
+        leadership_senate_w_test$p.value)
 ```
 
 ### Foreign PACs
@@ -122,49 +125,50 @@ sprintf("Correlation Between Leadership PAC Donations by Party and Senate Party 
 #### House of Representatives
 
 ```{r echo = FALSE}
-foreign_house_correlation_test = cor.test(
+foreign_house_w_test = wilcox.test(
   foreign_clean_data %>%
     filter(party == "dem_percent") %>%
     pull(amount),
   house_senate_clean_data %>% 
     filter(party == "democratic",
            pos_type == "house") %>% 
-    pull(seats))
+    pull(seats),
+    conf.int = TRUE)
 
 
-sprintf("Correlation Between Foreign PAC Donations by Party and House of Representatives Party Distribution is %.5f with p-value %.5f", 
-        foreign_house_correlation_test$estimate,
-        foreign_house_correlation_test$p.value)
+sprintf("Wilcox Test Statistic Between Foreign PAC Donations by Party and House of Representatives Party Distribution is %.5f with p-value %.5f", 
+        foreign_house_w_test$statistic,
+        foreign_house_w_test$p.value)
 ```
 
 #### Senate
 
 ```{r echo = FALSE}
-foreign_senate_correlation_test = cor.test(
+foreign_senate_w_test = wilcox.test(
   foreign_clean_data %>%
     filter(party == "dem_percent") %>%
     pull(amount),
   house_senate_clean_data %>% 
     filter(party == "democratic",
            pos_type == "senate") %>% 
-    pull(seats))
+    pull(seats),
+    conf.int = TRUE)
 
 
-sprintf("Correlation Between Foreign PAC Donations by Party and Senate Party Distribution is %.5f with p-value %.5f",
-        foreign_senate_correlation_test$estimate,
-        foreign_senate_correlation_test$p.value)
+sprintf("Wilcox Test Statistic Between Foreign PAC Donations by Party and Senate Party Distribution is %.5f with p-value %.5f",
+        foreign_senate_w_test$statistic,
+        foreign_senate_w_test$p.value)
 ```
 
 ### PACs by Industry
 
-Create a tibble with the correlation, test statistic, p-value, CI data for each different industry
+Create a tibble with the ttest, p-value, CI data for each different industry
 
 #### House of Representatives
 
 ```{r echo = FALSE}
-industry_house_corr_tbl = tibble(
+industry_house_w_tbl = tibble(
   industry_name = character(),
-  correlation = numeric(),
   test_statistic = numeric(),
   p_value = numeric(),
   average_total_donation = numeric(),
@@ -185,38 +189,37 @@ for (ind in unique_industries){
     pull(seats))){
     next
     }
-  curr_cor = cor.test(
+  curr_test = wilcox.test(
     industry_clean_data %>%
       filter(industry_name == ind) %>%
       pull(dem_percent),
     house_senate_clean_data %>% 
     filter(party == "democratic",
            pos_type == "house") %>% 
-    pull(seats)
+    pull(seats),
+    conf.int = TRUE
   )
   
-  industry_house_corr_tbl = rbind(industry_house_corr_tbl,
+  industry_house_w_tbl = rbind(industry_house_w_tbl,
                                   c(
                                     industry_name = ind,
-                                    correlation = curr_cor$estimate,
-                                    test_statistic = curr_cor$statistic,
-                                    p_value = curr_cor$p.value,
+                                    test_statistic = curr_test$statistic,
+                                    p_value = curr_test$p.value,
                                     average_total_donation = mean(industry_clean_data %>%
       filter(industry_name == ind) %>%
       pull(total)),
-                                    CI.0 = curr_cor$conf.int[[1]],
-                                    CI.1 = curr_cor$conf.int[[2]],
-                                    CI_reject = if_else(curr_cor$conf.int[[1]] < 0 && 0 < curr_cor$conf.int[[2]], "null", "alternative")
+                                    CI.0 = curr_test$conf.int[[1]],
+                                    CI.1 = curr_test$conf.int[[2]],
+                                    CI_reject = if_else(curr_test$conf.int[[1]] < 0 && 0 < curr_test$conf.int[[2]], "null", "alternative")
                                   ,
-                                    p_reject = if_else(curr_cor$p.value < alpha,
+                                    p_reject = if_else(curr_test$p.value < alpha,
                                                        "alternative",
                                                        "null")))
   
 }
 
 
-colnames(industry_house_corr_tbl) = c("industry_name",
-                                      "correlation",
+colnames(industry_house_w_tbl) = c("industry_name",
                                       "test_statistic",
                                       "p_value",
                                       "average_total_donation",
@@ -225,9 +228,8 @@ colnames(industry_house_corr_tbl) = c("industry_name",
                                       "CI_reject",
                                       "p_reject")
 
-industry_house_corr_tbl = industry_house_corr_tbl %>% 
-  mutate(correlation = parse_number(correlation),
-         test_statistic = parse_number(test_statistic),
+industry_house_w_tbl = industry_house_w_tbl %>% 
+  mutate(test_statistic = parse_number(test_statistic),
          p_value = parse_number(p_value),
          average_total_donation = parse_number(average_total_donation),
          CI.0 = parse_number(CI.0),
@@ -236,7 +238,7 @@ industry_house_corr_tbl = industry_house_corr_tbl %>%
 
 
 ```{r industry-influence-distribution-plot-house, echo = FALSE}
-plt = ggplot(industry_house_corr_tbl, aes(x = p_value, y = average_total_donation)) +
+plt = ggplot(industry_house_w_tbl, aes(x = p_value, y = average_total_donation)) +
   geom_point(aes(text = paste0("Industry: ", industry_name))) +
   scale_y_log10() +
   scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
@@ -246,13 +248,16 @@ fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
 fig
 ```
 
+
+
+
+
 #### Senate
 
 ```{r echo = FALSE}
-industry_senate_corr_tbl = tibble(
+industry_senate_w_tbl = tibble(
   industry_name = character(),
-  correlation = numeric(),
-  testest_statistic = numeric(),
+  test_statistic = numeric(),
   p_value = numeric(),
   average_total_donation = numeric(),
   CI.0 = numeric(),
@@ -272,39 +277,38 @@ for (ind in unique_industries){
     pull(seats))){
     next
     }
-  curr_cor = cor.test(
+  curr_test = wilcox.test(
     industry_clean_data %>%
       filter(industry_name == ind) %>%
       pull(dem_percent),
     house_senate_clean_data %>% 
     filter(party == "democratic",
            pos_type == "senate") %>% 
-    pull(seats)
+    pull(seats),
+    conf.int = TRUE
   )
   
-  industry_senate_corr_tbl = rbind(industry_senate_corr_tbl,
+  industry_senate_w_tbl = rbind(industry_senate_w_tbl,
                                   c(
                                     industry_name = ind,
-                                    correlation = curr_cor$estimate,
-                                    testest_statistic = curr_cor$statistic,
-                                    p_value = curr_cor$p.value,
+                                    test_statistic = curr_test$statistic,
+                                    p_value = curr_test$p.value,
                                     average_total_donation = mean(industry_clean_data %>%
       filter(industry_name == ind) %>%
       pull(total)),
-                                    CI.0 = curr_cor$conf.int[[1]],
-                                    CI.1 = curr_cor$conf.int[[2]],
-                                    CI_reject = if_else(curr_cor$conf.int[[1]] < 0 && 0 < curr_cor$conf.int[[2]], "null", "alternative")
+                                    CI.0 = curr_test$conf.int[[1]],
+                                    CI.1 = curr_test$conf.int[[2]],
+                                    CI_reject = if_else(curr_test$conf.int[[1]] < 0 && 0 < curr_test$conf.int[[2]], "null", "alternative")
                                   ,
-                                    p_reject = if_else(curr_cor$p.value < alpha,
+                                    p_reject = if_else(curr_test$p.value < alpha,
                                                        "alternative",
                                                        "null")))
   
 }
 
 
-colnames(industry_senate_corr_tbl) = c("industry_name",
-                                      "correlation",
-                                      "testest_statistic",
+colnames(industry_senate_w_tbl) = c("industry_name",
+                                      "test_statistic",
                                       "p_value",
                                       "average_total_donation",
                                       "CI.0",
@@ -312,9 +316,9 @@ colnames(industry_senate_corr_tbl) = c("industry_name",
                                       "CI_reject",
                                       "p_reject")
 
-industry_senate_corr_tbl = industry_senate_corr_tbl %>% 
-  mutate(correlation = parse_number(correlation),
-         testest_statistic = parse_number(testest_statistic),
+industry_senate_w_tbl = industry_senate_w_tbl %>% 
+  mutate(
+         test_statistic = parse_number(test_statistic),
          p_value = parse_number(p_value),
          average_total_donation = parse_number(average_total_donation),
          CI.0 = parse_number(CI.0),
@@ -323,7 +327,7 @@ industry_senate_corr_tbl = industry_senate_corr_tbl %>%
 
 
 ```{r industry-influence-distribution-plot-senate, echo = FALSE}
-plt = ggplot(industry_senate_corr_tbl, aes(x = p_value, y = average_total_donation)) +
+plt = ggplot(industry_senate_w_tbl, aes(x = p_value, y = average_total_donation)) +
   geom_point(aes(text = paste0("Industry: ", industry_name))) +
   scale_y_log10() +
   scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
@@ -332,7 +336,3 @@ plt = ggplot(industry_senate_corr_tbl, aes(x = p_value, y = average_total_donati
 fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
 fig
 ```
-
-
-
-
