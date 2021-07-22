@@ -48,3 +48,46 @@ ggplot(clean_data, aes(x = seat_total)) +
   facet_wrap(~pos_type) + 
   geom_histogram(bins = 8)
 ```
+
+
+
+
+
+```{r calc-change, echo = FALSE}
+unique_years = clean_data$year %>% unique()
+unique_types = clean_data$pos_type %>% unique()
+
+new_tbl = tibble(
+  year = numeric(),
+  pos_type = character(),
+  seat_change_dem = numeric()
+)
+
+
+for (i in seq_along(1:(length(unique_years) - 1))){
+  next_year = clean_data %>% filter(year == unique_years[[i+1]], party == "democratic")
+  curr_year = clean_data %>% filter(year == unique_years[[i]], party == "democratic")
+  for (j in unique_types){
+    seat_change = (next_year %>% filter(pos_type == j) %>% pull(seats))[[1]] - (curr_year %>% filter(pos_type == j) %>% pull(seats))[[1]]
+    new_tbl = rbind(new_tbl, c(year = unique_years[[i+1]], pos_type = j, seat_change_dem = seat_change))
+  }
+  
+}
+colnames(new_tbl) = c("year", "pos_type", "seat_change_dem")
+
+new_tbl = new_tbl %>% 
+  mutate(
+    year = parse_number(year),
+    seat_change_dem = parse_number(seat_change_dem)
+  )
+
+
+new_tbl
+
+```
+
+
+```{r change-plot, echo = FALSE}
+ggplot(new_tbl, aes(x = year, y = seat_change_dem, color = pos_type)) +
+  geom_line()
+```
