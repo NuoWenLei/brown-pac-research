@@ -157,7 +157,7 @@ sprintf("Correlation Between Foreign PAC Donations by Party and Senate Party Dis
 
 ### PACs by Industry
 
-Create a tibble with the correlation, ttest, p-value, CI data for each different sector
+Create a tibble with the correlation, ttest, p-value, CI data for each different industry
 
 #### House of Representatives
 
@@ -235,7 +235,7 @@ industry_house_corr_tbl = industry_house_corr_tbl %>%
 ```
 
 
-```{r industry-influence-distribution-plot, echo = FALSE}
+```{r industry-influence-distribution-plot-house, echo = FALSE}
 plt = ggplot(industry_house_corr_tbl, aes(x = p_value, y = average_total_donation)) +
   geom_point(aes(text = paste0("Industry: ", industry_name))) +
   scale_y_log10() +
@@ -246,7 +246,92 @@ fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
 fig
 ```
 
+#### Senate
 
+```{r echo = FALSE}
+industry_senate_corr_tbl = tibble(
+  industry_name = character(),
+  correlation = numeric(),
+  t_statistic = numeric(),
+  p_value = numeric(),
+  average_total_donation = numeric(),
+  CI.0 = numeric(),
+  CI.1 = numeric(),
+  CI_reject = character(),
+  p_reject = character()
+)
+
+unique_industries = industry_clean_data$industry_name %>% unique()
+
+for (ind in unique_industries){
+  if (length(industry_clean_data %>%
+      filter(industry_name == ind) %>%
+      pull(dem_percent)) != length(house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats))){
+    next
+    }
+  curr_cor = cor.test(
+    industry_clean_data %>%
+      filter(industry_name == ind) %>%
+      pull(dem_percent),
+    house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+  )
+  
+  industry_senate_corr_tbl = rbind(industry_senate_corr_tbl,
+                                  c(
+                                    industry_name = ind,
+                                    correlation = curr_cor$estimate,
+                                    t_statistic = curr_cor$statistic,
+                                    p_value = curr_cor$p.value,
+                                    average_total_donation = mean(industry_clean_data %>%
+      filter(industry_name == ind) %>%
+      pull(total)),
+                                    CI.0 = curr_cor$conf.int[[1]],
+                                    CI.1 = curr_cor$conf.int[[2]],
+                                    CI_reject = if_else(curr_cor$conf.int[[1]] < 0 && 0 < curr_cor$conf.int[[2]], "null", "alternative")
+                                  ,
+                                    p_reject = if_else(curr_cor$p.value < alpha,
+                                                       "alternative",
+                                                       "null")))
+  
+}
+
+
+colnames(industry_senate_corr_tbl) = c("industry_name",
+                                      "correlation",
+                                      "t_statistic",
+                                      "p_value",
+                                      "average_total_donation",
+                                      "CI.0",
+                                      "CI.1",
+                                      "CI_reject",
+                                      "p_reject")
+
+industry_senate_corr_tbl = industry_senate_corr_tbl %>% 
+  mutate(correlation = parse_number(correlation),
+         t_statistic = parse_number(t_statistic),
+         p_value = parse_number(p_value),
+         average_total_donation = parse_number(average_total_donation),
+         CI.0 = parse_number(CI.0),
+         CI.1 = parse_number(CI.1))
+```
+
+
+```{r industry-influence-distribution-plot-senate, echo = FALSE}
+plt = ggplot(industry_senate_corr_tbl, aes(x = p_value, y = average_total_donation)) +
+  geom_point(aes(text = paste0("Industry: ", industry_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0))
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
 
 
 
