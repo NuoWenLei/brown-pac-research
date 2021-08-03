@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 alpha = .05
 ```
 
-```{r load-house_senate, echo = FALSE}
+```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSE}
 house_senate_data = read_csv("../data/house_senate.csv")
 
 house_senate_clean_data = house_senate_data %>% 
@@ -29,7 +29,7 @@ house_senate_clean_data = house_senate_data %>%
             .groups = "drop")
 ```
 
-```{r load-leadership, echo = FALSE}
+```{r load-leadership, echo = FALSE, warning = FALSE, message = FALSE}
 leadership_data = read_csv("../data/leadership_pac_data/clean_data.csv")
 
 leadership_clean_data = leadership_data %>% 
@@ -47,7 +47,7 @@ leadership_clean_data = leadership_data %>%
   )
 ```
 
-```{r load-foreign, echo = FALSE}
+```{r load-foreign, echo = FALSE, warning = FALSE, message = FALSE}
 foreign_data = read_csv("../data/foreign_pac_data/clean_data.csv")
 
 foreign_clean_data = foreign_data %>% 
@@ -66,14 +66,12 @@ foreign_clean_data = foreign_data %>%
 
 ```
 
-```{r load-industry, echo = FALSE}
+```{r load-industry, echo = FALSE, warning = FALSE, message = FALSE}
 industry_data = read_csv("../data/industry_donation_data/clean_data.csv")
 
 industry_clean_data = industry_data %>% 
   mutate(dem_percent = dem / total,
          repub_percent = repub / total)
-
-industry_clean_data
 
 ```
 
@@ -84,7 +82,7 @@ industry_clean_data
 
 #### House of Representatives
 
-```{r echo = FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 leadership_house_t_test = t.test(
   leadership_clean_data %>%
     filter(party == "dem_percent") %>%
@@ -102,7 +100,7 @@ sprintf("T-Statistic Between Leadership PAC Donations by Party and House of Repr
 
 #### Senate
 
-```{r echo = FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 leadership_senate_t_test = t.test(
   leadership_clean_data %>%
     filter(party == "dem_percent") %>%
@@ -122,7 +120,7 @@ sprintf("T-Statistic Between Leadership PAC Donations by Party and Senate Party 
 
 #### House of Representatives
 
-```{r echo = FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 foreign_house_t_test = t.test(
   foreign_clean_data %>%
     filter(party == "dem_percent") %>%
@@ -140,7 +138,7 @@ sprintf("T-Statistic Between Foreign PAC Donations by Party and House of Represe
 
 #### Senate
 
-```{r echo = FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 foreign_senate_t_test = t.test(
   foreign_clean_data %>%
     filter(party == "dem_percent") %>%
@@ -162,7 +160,7 @@ Create a tibble with the ttest, p-value, CI data for each different industry
 
 #### House of Representatives
 
-```{r echo = FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 industry_house_t_tbl = tibble(
   industry_name = character(),
   t_statistic = numeric(),
@@ -232,12 +230,25 @@ industry_house_t_tbl = industry_house_t_tbl %>%
 ```
 
 
-```{r industry-influence-distribution-plot-house, echo = FALSE}
+```{r industry-influence-distribution-plot-house, echo = FALSE, warning = FALSE, message = FALSE}
 plt = ggplot(industry_house_t_tbl, aes(x = p_value, y = average_total_donation)) +
   geom_point(aes(text = paste0("Industry: ", industry_name))) +
   scale_y_log10() +
   scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
-  theme(axis.text.x = element_text(angle = -90, hjust = 0))
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("Average Industry Donation over p-value")
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+```{r industry-statistic-distribution-plot-house, echo = FALSE, warning = FALSE, message = FALSE}
+plt = ggplot(industry_house_t_tbl, aes(x = p_value, y = t_statistic)) +
+  geom_point(aes(text = paste0("Industry: ", industry_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("T Test Statistic over p-value")
 
 fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
 fig
@@ -249,7 +260,7 @@ fig
 
 #### Senate
 
-```{r echo = FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 industry_senate_t_tbl = tibble(
   industry_name = character(),
   t_statistic = numeric(),
@@ -320,13 +331,242 @@ industry_senate_t_tbl = industry_senate_t_tbl %>%
 ```
 
 
-```{r industry-influence-distribution-plot-senate, echo = FALSE}
+```{r industry-influence-distribution-plot-senate, echo = FALSE, warning = FALSE, message = FALSE}
 plt = ggplot(industry_senate_t_tbl, aes(x = p_value, y = average_total_donation)) +
   geom_point(aes(text = paste0("Industry: ", industry_name))) +
   scale_y_log10() +
   scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
-  theme(axis.text.x = element_text(angle = -90, hjust = 0))
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("Average Industry Donation over p-value")
 
 fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
 fig
 ```
+
+```{r industry-statistic-distribution-plot-senate, echo = FALSE, warning = FALSE, message = FALSE}
+plt = ggplot(industry_senate_t_tbl, aes(x = p_value, y = t_statistic)) +
+  geom_point(aes(text = paste0("Industry: ", industry_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("T Test Statistic over p-value")
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+
+### Foreign PACs by Country
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+country_count_tbl = table(foreign_data$country)
+
+count_tibble = tibble(
+  name = names(country_count_tbl),
+  value = c(country_count_tbl)
+)
+
+full_use_ctys = count_tibble %>%
+  filter(value == max(value)) %>%
+  pull(name)
+
+foreign_percent_data = foreign_data %>% 
+  mutate(total = dems_sum + repubs_sum,
+         dem_percent = dems_sum / total, 
+         repub_percent = repubs_sum / total)
+```
+
+#### House of Representatives
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+country_house_t_tbl = tibble(
+  country_name = character(),
+  test_statistic = numeric(),
+  p_value = numeric(),
+  average_total_donation = numeric(),
+  CI.0 = numeric(),
+  CI.1 = numeric(),
+  CI_reject = character(),
+  p_reject = character()
+)
+
+for (cty in full_use_ctys){
+  curr_cty_data = foreign_percent_data %>%
+    filter(country == cty) %>% 
+    pull(dem_percent)
+  
+  curr_gov_data = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+  
+  if (length(curr_cty_data) != length(curr_gov_data)){
+    next
+  }
+  
+  curr_test = t.test(
+    curr_cty_data,
+    curr_gov_data
+  )
+  
+  country_house_t_tbl = rbind(country_house_t_tbl,
+                              c(
+                                    country_name = cty,
+                                    test_statistic = curr_test$statistic,
+                                    p_value = curr_test$p.value,
+                                    average_total_donation = mean(foreign_percent_data %>%
+      filter(country == cty) %>%
+      pull(total)),
+                                    CI.0 = curr_test$conf.int[[1]],
+                                    CI.1 = curr_test$conf.int[[2]],
+                                    CI_reject = if_else(curr_test$conf.int[[1]] < 0 && 0 < curr_test$conf.int[[2]], "null", "alternative")
+                                  ,
+                                    p_reject = if_else(curr_test$p.value < alpha,
+                                                       "alternative",
+                                                       "null")
+      ))
+}
+
+colnames(country_house_t_tbl) = c("country_name",
+                                      "test_statistic",
+                                      "p_value",
+                                      "average_total_donation",
+                                      "CI.0",
+                                      "CI.1",
+                                      "CI_reject",
+                                      "p_reject")
+
+
+country_house_t_tbl = country_house_t_tbl %>% 
+  mutate(
+         test_statistic = parse_number(test_statistic),
+         p_value = parse_number(p_value),
+         average_total_donation = parse_number(average_total_donation),
+         CI.0 = parse_number(CI.0),
+         CI.1 = parse_number(CI.1))
+
+```
+
+
+```{r country-influence-distribution-plot-house, echo = FALSE, message = FALSE, warning = FALSE}
+plt = ggplot(country_house_t_tbl, aes(x = p_value, y = average_total_donation)) +
+  geom_point(aes(text = paste0("Country: ", country_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("Average Country Donation over p-value")
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+```{r country-statistic-distribution-plot-house, echo = FALSE, message = FALSE, warning = FALSE}
+plt = ggplot(country_house_t_tbl, aes(x = p_value, y = test_statistic)) +
+  geom_point(aes(text = paste0("Country: ", country_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("Average Country Donation over p-value")
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+
+#### Senate
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+country_senate_t_tbl = tibble(
+  country_name = character(),
+  test_statistic = numeric(),
+  p_value = numeric(),
+  average_total_donation = numeric(),
+  CI.0 = numeric(),
+  CI.1 = numeric(),
+  CI_reject = character(),
+  p_reject = character()
+)
+
+for (cty in full_use_ctys){
+  curr_cty_data = foreign_percent_data %>%
+    filter(country == cty) %>% 
+    pull(dem_percent)
+  
+  curr_gov_data = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+  
+  if (length(curr_cty_data) != length(curr_gov_data)){
+    next
+  }
+  
+  curr_test = t.test(
+    curr_cty_data,
+    curr_gov_data
+  )
+  
+  country_senate_t_tbl = rbind(country_senate_t_tbl,
+                              c(
+                                    country_name = cty,
+                                    test_statistic = curr_test$statistic,
+                                    p_value = curr_test$p.value,
+                                    average_total_donation = mean(foreign_percent_data %>%
+      filter(country == cty) %>%
+      pull(total)),
+                                    CI.0 = curr_test$conf.int[[1]],
+                                    CI.1 = curr_test$conf.int[[2]],
+                                    CI_reject = if_else(curr_test$conf.int[[1]] < 0 && 0 < curr_test$conf.int[[2]], "null", "alternative")
+                                  ,
+                                    p_reject = if_else(curr_test$p.value < alpha,
+                                                       "alternative",
+                                                       "null")
+      ))
+}
+
+colnames(country_senate_t_tbl) = c("country_name",
+                                      "test_statistic",
+                                      "p_value",
+                                      "average_total_donation",
+                                      "CI.0",
+                                      "CI.1",
+                                      "CI_reject",
+                                      "p_reject")
+
+
+country_senate_t_tbl = country_senate_t_tbl %>% 
+  mutate(
+         test_statistic = parse_number(test_statistic),
+         p_value = parse_number(p_value),
+         average_total_donation = parse_number(average_total_donation),
+         CI.0 = parse_number(CI.0),
+         CI.1 = parse_number(CI.1))
+
+```
+
+
+```{r country-influence-distribution-plot-senate, echo = FALSE, message = FALSE, warning = FALSE}
+plt = ggplot(country_senate_t_tbl, aes(x = p_value, y = average_total_donation)) +
+  geom_point(aes(text = paste0("Country: ", country_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("Average Country Donation over p-value")
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+```{r country-statistic-distribution-plot-senate, echo = FALSE, message = FALSE, warning = FALSE}
+plt = ggplot(country_senate_t_tbl, aes(x = p_value, y = test_statistic)) +
+  geom_point(aes(text = paste0("Country: ", country_name))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = .05)) +
+  theme(axis.text.x = element_text(angle = -90, hjust = 0)) +
+  ggtitle("T Test Statistic over p-value")
+
+fig = ggplotly(plt) %>% layout(xaxis = list(range = c(0, alpha)))
+fig
+```
+
+

@@ -1,0 +1,487 @@
+---
+title: "linear_model_page"
+author: "Nuo Wen Lei"
+date: "7/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(plotly)
+library(rmarkdown)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+alpha = .05
+```
+
+```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSE}
+house_senate_data = read_csv("../data/house_senate.csv")
+
+house_senate_clean_data = house_senate_data %>% 
+  pivot_longer(cols = -year, names_to = "position", values_to = "seats") %>% 
+  mutate(
+    party = gsub("\\_.*", "", position),
+    pos_type = gsub(".*\\_", "", substr(position, 1, nchar(position)-2))
+  ) %>% 
+  group_by(pos_type, year) %>% 
+  summarize(party = party,
+            seat_total = seats,
+            seats = seats / sum(seats),
+            .groups = "drop")
+print(house_senate_clean_data %>% colnames())
+```
+# Summarize Stats
+
+```{r sum-house_senate, echo = FALSE}
+sum_house_senate = house_senate_clean_data %>% 
+  rename(
+    "Number of Seats" = seat_total,
+    "Percentage of Seat" = seats
+  ) %>% 
+  select(-c(pos_type, party, year)) %>% 
+  summarise_each(funs(mean, sd, min, max)) %>% 
+  gather(key, value, everything()) %>% 
+  separate(key, into = c("variable", "stat"), sep = "_") %>%
+  spread(stat, value) %>%
+  select(variable, mean, sd, min, max) %>%
+  mutate_each(funs(round(., 1)), -variable)
+```
+
+```{r load-leadership, echo = FALSE, warning = FALSE, message = FALSE}
+leadership_data = read_csv("../data/leadership_pac_data/clean_data.csv")
+
+leadership_clean_data = leadership_data %>% 
+  group_by(year) %>% 
+  summarize(total = sum(dem) + sum(repub),
+            dem = sum(dem),
+            repub = sum(repub),
+            .groups = "drop") %>%
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total) %>% 
+  pivot_longer(
+    cols = c(dem_percent, repub_percent),
+    names_to = "party",
+    values_to = "amount"
+  )
+```
+
+```{r sum-leadership, echo = FALSE}
+sum_leadership = leadership_data %>%
+    select(dem, repub, year) %>% 
+    rename(
+        "Donation to Democrats" = dem,
+        "Donation to Republicans" = repub
+    ) %>% 
+    group_by(year) %>%
+    summarise_each(funs(length, mean, sd, min, max)) %>% 
+    gather(key, value, -year) %>% 
+    separate(key, into = c("variable", "stat"), sep = "_") %>%
+    mutate(variable = paste0(year, " ", variable)) %>% 
+    spread(stat, value) %>% 
+    select(variable, length, mean, sd, min, max) %>%
+    mutate_each(funs(round(., 2)), -variable)
+sum_leadership
+```
+
+```{r load-foreign, echo = FALSE, warning = FALSE, message = FALSE}
+foreign_data = read_csv("../data/foreign_pac_data/clean_data.csv")
+
+foreign_clean_data = foreign_data %>% 
+  group_by(year) %>% 
+  summarize(total = sum(dems_sum) + sum(repubs_sum),
+            dem = sum(dems_sum),
+            repub = sum(repubs_sum),
+            .groups = "drop") %>%
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total) %>% 
+  pivot_longer(
+    cols = c(dem_percent, repub_percent),
+    names_to = "party",
+    values_to = "amount"
+  )
+
+```
+
+
+```{r load-industry, echo = FALSE, warning = FALSE, message = FALSE}
+industry_data = read_csv("../data/industry_donation_data/clean_data.csv")
+
+industry_clean_data = industry_data %>% 
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total)
+
+```
+
+## Analyze PAC Data with Linear Regression
+
+```{r}
+congress_df = tibble(
+  `House of Representatives Seat Distribution` = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats),
+  `Senate Seat Distribution` = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats),
+  `Leadership PAC Donations` = leadership_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount),
+  `Foreign Donations` = foreign_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount)
+)
+```
+
+```{r}
+house_agg_fit = lm(`House of Representatives Seat Distribution` ~ `Leadership PAC Donations` + `Foreign Donations`, data = congress_df)
+senate_agg_fit = lm(`Senate Seat Distribution` ~ `Leadership PAC Donations` + `Foreign Donations`, data = congress_df)
+```
+
+### Leadership PACs
+
+#### House of Representatives
+
+```{r}
+house_percentage = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+
+leadership_donation_percentage = leadership_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount)
+
+fit = lm(house_percentage~leadership_donation_percentage)
+
+sm = summary(fit)
+
+adj_r_2 = sm$adj.r.squared
+
+
+print(sprintf("Adjusted R Squared: %.5f", adj_r_2))
+
+sm$coefficients
+```
+
+#### Senate
+
+```{r}
+senate_percentage = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+
+leadership_donation_percentage = leadership_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount)
+
+fit2 = lm(senate_percentage~leadership_donation_percentage)
+
+sm = summary(fit2)
+
+adj_r_2 = sm$adj.r.squared
+
+
+print(sprintf("Adjusted R Squared: %.5f", adj_r_2))
+
+sm$coefficients
+```
+
+### Foreign PACs
+
+#### House of Representatives
+
+```{r}
+
+foreign_donation_percentage = foreign_clean_data %>%
+    filter(party == "dem_percent") %>%
+    pull(amount)
+
+fit3 = lm(house_percentage~foreign_donation_percentage)
+
+sm = summary(fit3)
+
+adj_r_2 = sm$adj.r.squared
+
+
+print(sprintf("Adjusted R Squared: %.5f", adj_r_2))
+
+sm$coefficients
+```
+
+#### Senate
+
+```{r}
+
+
+fit4 = lm(senate_percentage~foreign_donation_percentage)
+
+sm = summary(fit4)
+
+adj_r_2 = sm$adj.r.squared
+
+
+print(sprintf("Adjusted R Squared: %.5f", adj_r_2))
+
+sm$coefficients
+```
+
+### PAC by Industry
+
+#### House
+
+```{r}
+coef_names = list("industry_name")
+
+coef_name_list = attr(sm$coefficients, "dimnames")
+
+for (i in seq_along(1:2)){
+  for (j in coef_name_list[[2]]){
+    coef_names = append(coef_names, paste0(if_else(coef_name_list[[1]][[i]]!="(Intercept)", "curr_ind", coef_name_list[[1]][[i]]), ".", j))
+  }
+}
+
+unique_industries = industry_clean_data$industry_name %>% unique()
+
+coef_table = tibble()
+
+r_2_table = tibble()
+
+for (ind in unique_industries){
+  curr_ind = industry_clean_data %>%
+    filter(industry_name == ind) %>%
+    pull(dem_percent)
+  
+  curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+  
+  if (length(curr_ind) != length(curr_gov)){next}
+  
+  fit = lm(curr_gov~curr_ind)
+  
+  sm = summary(fit)
+  
+  curr_list = list(industry_name = ind)
+  
+  for (i in seq_along(1:2)){
+    for (j in seq_along(1:4)){
+      curr_list[[coef_names[[((i-1)*4) + j + 1]]]] = sm$coefficients[i, j]
+    }
+  }
+  coef_table = rbind(coef_table, curr_list)
+  
+  
+  r_2_table = rbind(r_2_table, list(
+    industry_name = ind,
+    adj_r_2 = sm$adj.r.squared
+  ))
+  
+  colnames(coef_table) = coef_names
+  
+}
+
+ind_house_lm_tbl = inner_join(r_2_table, coef_table,by = "industry_name") %>% arrange(desc(adj_r_2))
+
+paged_table(ind_house_lm_tbl)
+```
+
+
+#### Senate
+
+```{r}
+coef_names = list("industry_name")
+
+coef_name_list = attr(sm$coefficients, "dimnames")
+
+for (i in seq_along(1:2)){
+  for (j in coef_name_list[[2]]){
+    coef_names = append(coef_names, paste0(if_else(coef_name_list[[1]][[i]]!="(Intercept)", "curr_ind", coef_name_list[[1]][[i]]), ".", j))
+  }
+}
+
+unique_industries = industry_clean_data$industry_name %>% unique()
+
+coef_table = tibble()
+
+r_2_table = tibble()
+
+for (ind in unique_industries){
+  curr_ind = industry_clean_data %>%
+    filter(industry_name == ind) %>%
+    pull(dem_percent)
+  
+  curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+  
+  if (length(curr_ind) != length(curr_gov)){next}
+  
+  fit = lm(curr_gov~curr_ind)
+  
+  sm = summary(fit)
+  
+  curr_list = list(industry_name = ind)
+  
+  for (i in seq_along(1:2)){
+    for (j in seq_along(1:4)){
+      curr_list[[coef_names[[((i-1)*4) + j + 1]]]] = sm$coefficients[i, j]
+    }
+  }
+  coef_table = rbind(coef_table, curr_list)
+  
+  
+  r_2_table = rbind(r_2_table, list(
+    industry_name = ind,
+    adj_r_2 = sm$adj.r.squared
+  ))
+  
+  colnames(coef_table) = coef_names
+  
+}
+
+ind_senate_lm_tbl = inner_join(r_2_table, coef_table,by = "industry_name") %>% arrange(desc(adj_r_2))
+
+paged_table(ind_senate_lm_tbl)
+```
+
+### Foreign PAC by Country
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+country_count_tbl = table(foreign_data$country)
+
+count_tibble = tibble(
+  name = names(country_count_tbl),
+  value = c(country_count_tbl)
+)
+
+full_use_ctys = count_tibble %>%
+  filter(value == max(value)) %>%
+  pull(name)
+
+foreign_percent_data = foreign_data %>% 
+  mutate(total = dems_sum + repubs_sum,
+         dem_percent = dems_sum / total, 
+         repub_percent = repubs_sum / total)
+```
+
+#### House
+
+```{r}
+coef_names = list("country_name")
+
+coef_name_list = attr(sm$coefficients, "dimnames")
+
+for (i in seq_along(1:2)){
+  for (j in coef_name_list[[2]]){
+    coef_names = append(coef_names, paste0(if_else(coef_name_list[[1]][[i]]!="(Intercept)", "curr_cty", coef_name_list[[1]][[i]]), ".", j))
+  }
+}
+
+coef_table = tibble()
+
+r_2_table = tibble()
+
+for (cty in full_use_ctys){
+  curr_cty = foreign_percent_data %>%
+    filter(country == cty) %>%
+    pull(dem_percent)
+  
+  curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+  
+  if (length(curr_cty) != length(curr_gov)){next}
+  
+  fit = lm(curr_gov~curr_cty)
+  
+  sm = summary(fit)
+  
+  curr_list = list(country_name = cty)
+  
+  for (i in seq_along(1:2)){
+    for (j in seq_along(1:4)){
+      curr_list[[coef_names[[((i-1)*4) + j + 1]]]] = sm$coefficients[i, j]
+    }
+  }
+  coef_table = rbind(coef_table, curr_list)
+  
+  
+  r_2_table = rbind(r_2_table, list(
+    country_name = cty,
+    adj_r_2 = sm$adj.r.squared
+  ))
+  
+  colnames(coef_table) = coef_names
+  
+}
+
+cty_house_lm_tbl = inner_join(r_2_table, coef_table,by = "country_name") %>% arrange(desc(adj_r_2))
+
+paged_table(cty_house_lm_tbl)
+```
+
+#### Senate
+
+```{r}
+coef_names = list("country_name")
+
+coef_name_list = attr(sm$coefficients, "dimnames")
+
+for (i in seq_along(1:2)){
+  for (j in coef_name_list[[2]]){
+    coef_names = append(coef_names, paste0(if_else(coef_name_list[[1]][[i]]!="(Intercept)", "curr_cty", coef_name_list[[1]][[i]]), ".", j))
+  }
+}
+
+coef_table = tibble()
+
+r_2_table = tibble()
+
+for (cty in full_use_ctys){
+  curr_cty = foreign_percent_data %>%
+    filter(country == cty) %>%
+    pull(dem_percent)
+  
+  curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+  
+  if (length(curr_cty) != length(curr_gov)){next}
+  
+  fit = lm(curr_gov~curr_cty)
+  
+  sm = summary(fit)
+  
+  curr_list = list(country_name = cty)
+  
+  for (i in seq_along(1:2)){
+    for (j in seq_along(1:4)){
+      curr_list[[coef_names[[((i-1)*4) + j + 1]]]] = sm$coefficients[i, j]
+    }
+  }
+  coef_table = rbind(coef_table, curr_list)
+  
+  
+  r_2_table = rbind(r_2_table, list(
+    country_name = cty,
+    adj_r_2 = sm$adj.r.squared
+  ))
+  
+  colnames(coef_table) = coef_names
+  
+}
+
+cty_senate_lm_tbl = inner_join(r_2_table, coef_table,by = "country_name") %>% arrange(desc(adj_r_2))
+
+paged_table(cty_senate_lm_tbl)
+```
+
+
+
+
