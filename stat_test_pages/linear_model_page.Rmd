@@ -248,6 +248,8 @@ coef_table = tibble()
 
 r_2_table = tibble()
 
+fit_list = list()
+
 for (ind in unique_industries){
   curr_ind = industry_clean_data %>%
     filter(industry_name == ind) %>%
@@ -261,6 +263,8 @@ for (ind in unique_industries){
   if (length(curr_ind) != length(curr_gov)){next}
   
   fit = lm(curr_gov~curr_ind)
+  
+  fit_list = append(fit_list, c(ind = curr_ind, f = fit))
   
   sm = summary(fit)
   
@@ -284,6 +288,8 @@ for (ind in unique_industries){
 }
 
 ind_house_lm_tbl = inner_join(r_2_table, coef_table,by = "industry_name") %>% arrange(desc(adj_r_2))
+
+ind_house_lm_tbl %>% write.csv("../data/fit_tables/ind_house_lm_tbl.csv")
 
 paged_table(ind_house_lm_tbl)
 ```
@@ -344,6 +350,8 @@ for (ind in unique_industries){
 }
 
 ind_senate_lm_tbl = inner_join(r_2_table, coef_table,by = "industry_name") %>% arrange(desc(adj_r_2))
+
+ind_senate_lm_tbl %>% write.csv("../data/fit_tables/ind_senate_lm_tbl.csv")
 
 paged_table(ind_senate_lm_tbl)
 ```
@@ -422,6 +430,8 @@ for (cty in full_use_ctys){
 
 cty_house_lm_tbl = inner_join(r_2_table, coef_table,by = "country_name") %>% arrange(desc(adj_r_2))
 
+cty_house_lm_tbl %>% write.csv("../data/fit_tables/cty_house_lm_tbl.csv")
+
 paged_table(cty_house_lm_tbl)
 ```
 
@@ -478,6 +488,8 @@ for (cty in full_use_ctys){
 }
 
 cty_senate_lm_tbl = inner_join(r_2_table, coef_table,by = "country_name") %>% arrange(desc(adj_r_2))
+
+cty_senate_lm_tbl %>% write.csv("../data/fit_tables/cty_senate_lm_tbl.csv")
 
 paged_table(cty_senate_lm_tbl)
 ```

@@ -1,0 +1,80 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup, include = FALSE}
+library(sjPlot)
+library(sjmisc)
+```
+
+
+```{r}
+leadership_data = read_csv("data/leadership_pac_data/clean_data.csv")
+
+leadership_data %>%
+    select(dem, repub, year) %>% 
+    rename(
+        "Donation to Democrats" = dem,
+        "Donation to Republicans" = repub
+    ) %>% descr(out = "viewer", show = c("n", "mean", "sd", "range"))
+
+
+```
+
+
+```{r}
+foreign_data = read_csv("data/foreign_pac_data/clean_data.csv")
+
+foreign_data %>%
+    select(dems_sum, repubs_sum, year) %>% 
+    rename(
+        "Donation to Democrats" = dems_sum,
+        "Donation to Republicans" = repubs_sum
+    ) %>% descr(out = "viewer", show = c("n", "mean", "sd", "range"))
+
+
+```
+
+```{r load-industry, echo = FALSE, warning = FALSE, message = FALSE}
+industry_data = read_csv("data/industry_donation_data/clean_data.csv")
+
+industry_clean_data = industry_data %>% 
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total)
+
+```
+
+
+```{r}
+ind1 = industry_clean_data %>%
+    filter(industry_name == "Dairy") %>%
+    pull(dem_percent)
+
+ind2 = industry_clean_data %>%
+    filter(industry_name == "Vegetables, fruits and tree nut") %>%
+    pull(dem_percent)
+
+ind3 = industry_clean_data %>%
+    filter(industry_name == "Air Transport") %>%
+    pull(dem_percent)
+
+ind4 = industry_clean_data %>%
+    filter(industry_name == "Energy & Natural Resources") %>%
+    pull(dem_percent)
+
+ind5 = industry_clean_data %>%
+    filter(industry_name == "Building Materials & Equipment") %>%
+    pull(dem_percent)
+
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+fit1 = lm(curr_gov~ind1)
+fit2 = lm(curr_gov~ind2)
+fit3 = lm(curr_gov~ind3)
+fit4 = lm(curr_gov~ind4)
+fit5 = lm(curr_gov~ind5)
+
+tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+```
