@@ -5,8 +5,26 @@ output: html_notebook
 ```{r setup, include = FALSE}
 library(sjPlot)
 library(sjmisc)
+library(tidyverse)
 ```
 
+
+```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSE}
+house_senate_data = read_csv("data/house_senate.csv")
+
+house_senate_clean_data = house_senate_data %>% 
+  pivot_longer(cols = -year, names_to = "position", values_to = "seats") %>% 
+  mutate(
+    party = gsub("\\_.*", "", position),
+    pos_type = gsub(".*\\_", "", substr(position, 1, nchar(position)-2))
+  ) %>% 
+  group_by(pos_type, year) %>% 
+  summarize(party = party,
+            seat_total = seats,
+            seats = seats / sum(seats),
+            .groups = "drop")
+print(house_senate_clean_data %>% colnames())
+```
 
 ```{r}
 leadership_data = read_csv("data/leadership_pac_data/clean_data.csv")
@@ -46,6 +64,11 @@ industry_clean_data = industry_data %>%
 
 
 ```{r}
+top_house_industries = c("Dairy",
+                         "Vegetables, fruits and tree nut",
+                         "Air Transport",
+                         "Energy & Natural Resources",
+                         "Building Materials & Equipment")
 ind1 = industry_clean_data %>%
     filter(industry_name == "Dairy") %>%
     pull(dem_percent)
@@ -77,4 +100,234 @@ fit4 = lm(curr_gov~ind4)
 fit5 = lm(curr_gov~ind5)
 
 tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+```
+
+```{r}
+top_senate_industries = c(
+  "Lobbyists",
+  "Savings & Loans",
+  "Business Services",
+  "Telecom Services",
+  "Forestry & Forest Products"
+)
+ind1 = industry_clean_data %>%
+    filter(industry_name == "Lobbyists") %>%
+    pull(dem_percent)
+
+ind2 = industry_clean_data %>%
+    filter(industry_name == "Savings & Loans") %>%
+    pull(dem_percent)
+
+ind3 = industry_clean_data %>%
+    filter(industry_name == "Business Services") %>%
+    pull(dem_percent)
+
+ind4 = industry_clean_data %>%
+    filter(industry_name == "Telecom Services") %>%
+    pull(dem_percent)
+
+ind5 = industry_clean_data %>%
+    filter(industry_name == "Forestry & Forest Products") %>%
+    pull(dem_percent)
+
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+fit1 = lm(curr_gov~ind1)
+fit2 = lm(curr_gov~ind2)
+fit3 = lm(curr_gov~ind3)
+fit4 = lm(curr_gov~ind4)
+fit5 = lm(curr_gov~ind5)
+
+tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+```
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+country_count_tbl = table(foreign_data$country)
+
+count_tibble = tibble(
+  name = names(country_count_tbl),
+  value = c(country_count_tbl)
+)
+
+full_use_ctys = count_tibble %>%
+  filter(value == max(value)) %>%
+  pull(name)
+
+foreign_percent_data = foreign_data %>% 
+  mutate(total = dems_sum + repubs_sum,
+         dem_percent = dems_sum / total, 
+         repub_percent = repubs_sum / total)
+```
+
+```{r}
+top_house_countries = c(
+  "France",
+  "UK",
+  "Netherlands",
+  "Canada",
+  "Germany"
+)
+cty1 = foreign_percent_data %>%
+    filter(country == "France") %>%
+    pull(dem_percent)
+
+cty2 = foreign_percent_data %>%
+    filter(country == "UK") %>%
+    pull(dem_percent)
+
+cty3 = foreign_percent_data %>%
+    filter(country == "Netherlands") %>%
+    pull(dem_percent)
+
+cty4 = foreign_percent_data %>%
+    filter(country == "Canada") %>%
+    pull(dem_percent)
+
+cty5 = foreign_percent_data %>%
+    filter(country == "Germany") %>%
+    pull(dem_percent)
+
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+fit1 = lm(curr_gov~cty1)
+fit2 = lm(curr_gov~cty2)
+fit3 = lm(curr_gov~cty3)
+fit4 = lm(curr_gov~cty4)
+fit5 = lm(curr_gov~cty5)
+
+tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+```
+
+```{r}
+top_senate_countries = c(
+  "UK",
+  "France",
+  "Denmark",
+  "Switzerland",
+  "Germany"
+)
+
+cty1 = foreign_percent_data %>%
+    filter(country == "UK") %>%
+    pull(dem_percent)
+
+cty2 = foreign_percent_data %>%
+    filter(country == "France") %>%
+    pull(dem_percent)
+
+cty3 = foreign_percent_data %>%
+    filter(country == "Denmark") %>%
+    pull(dem_percent)
+
+cty4 = foreign_percent_data %>%
+    filter(country == "Switzerland") %>%
+    pull(dem_percent)
+
+cty5 = foreign_percent_data %>%
+    filter(country == "Germany") %>%
+    pull(dem_percent)
+
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+fit1 = lm(curr_gov~cty1)
+fit2 = lm(curr_gov~cty2)
+fit3 = lm(curr_gov~cty3)
+fit4 = lm(curr_gov~cty4)
+fit5 = lm(curr_gov~cty5)
+
+tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+```
+
+```{r}
+industry_transposed_data = tibble(a = c(1:11))
+industry_transposed_data[["year"]] = unique(industry_clean_data$year)
+for (ind in unique(industry_clean_data$industry_name)){
+  curr_ind = industry_clean_data %>%
+    filter(industry_name == ind) %>% 
+    pull(dem_percent)
+  
+  if (length(curr_ind) != 11){
+    next
+  }
+  
+  industry_transposed_data[[ind]] = curr_ind
+}
+industry_transposed_data
+```
+
+```{r}
+country_transposed_data = tibble(a = c(1:11))
+country_transposed_data[["year"]] = unique(country_transposed_data$year)
+for (cty in unique(foreign_percent_data$country)){
+  curr_cty = foreign_percent_data %>%
+    filter(country == cty) %>% 
+    pull(dem_percent)
+  
+  if (length(curr_cty) != 11){
+    next
+  }
+  
+  country_transposed_data[[cty]] = curr_cty
+}
+country_transposed_data
+```
+
+```{r}
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+
+fit1 = lm(curr_gov~., data = industry_transposed_data %>% select(top_house_industries))
+
+tab_model(fit1, show.ci = FALSE)
+```
+
+```{r}
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+
+fit2 = lm(curr_gov~., data = industry_transposed_data %>% select(top_senate_industries))
+
+tab_model(fit2, show.ci = FALSE)
+```
+
+
+```{r}
+tab_model(fit1, fit2, show.ci = FALSE)
+```
+
+
+```{r}
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+
+fit3 = lm(curr_gov~., data = country_transposed_data %>% select(top_house_countries))
+
+tab_model(fit3, show.ci = FALSE)
+```
+
+```{r}
+curr_gov = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+
+fit4 = lm(curr_gov~., data = country_transposed_data %>% select(top_senate_countries))
+
+tab_model(fit4, show.ci = FALSE)
+```
+
+```{r}
+tab_model(fit3, fit4, show.ci = FALSE)
 ```
