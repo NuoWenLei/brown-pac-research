@@ -7,16 +7,17 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(ggthemes)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Party donation over the years
 
 
-```{r party-donation-clean, echo = FALSE}
+```{r load-leadership, echo = FALSE, warning = FALSE, message = FALSE}
 leadership_data = read_csv("data/leadership_pac_data/clean_data.csv")
 
-clean_data = leadership_data %>% 
+leadership_clean_data = leadership_data %>% 
   group_by(year) %>% 
   summarize(total = sum(dem) + sum(repub),
             dem = sum(dem),
@@ -31,18 +32,53 @@ clean_data = leadership_data %>%
   )
 ```
 
-```{r donation-plot, echo = FALSE}
-ggplot(clean_data, aes(x = year, y = amount, color = party)) + 
-  geom_line() + 
-  scale_color_manual(
-    values = c("blue", "red")
-  )
+```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSE}
+house_senate_data = read_csv("data/house_senate.csv")
+
+house_senate_clean_data = house_senate_data %>% 
+  pivot_longer(cols = -year, names_to = "position", values_to = "seats") %>% 
+  mutate(
+    party = gsub("\\_.*", "", position),
+    pos_type = gsub(".*\\_", "", substr(position, 1, nchar(position)-2))
+  ) %>% 
+  group_by(pos_type, year) %>% 
+  summarize(party = party,
+            seat_total = seats,
+            seats = seats / sum(seats),
+            .groups = "drop")
 ```
 
-```{r hist-plot, echo = FALSE}
-ggplot(clean_data, aes(x = total)) +
-  geom_histogram(bins = 8)
+```{r}
+house_senate_bound = rbind(leadership_clean_data %>% 
+  mutate(party = ifelse(party == "dem_percent", "democratic", "republican"),
+         pos_type = "donations") %>% 
+  rename(
+    seats = amount
+  ) %>% 
+  select(pos_type, year, party, seats),
+  house_senate_clean_data %>% 
+    select(pos_type, year, party, seats))
+
+house_senate_bound
 ```
+
+```{r big-line-plot, echo = FALSE}
+ggplot(house_senate_bound, aes(x=year, y=seats, color=party)) +
+  geom_line(aes(linetype=pos_type)) +
+  facet_wrap(~party) +
+  theme_clean() +
+  theme(axis.text.x = element_text(angle=-60, hjust=0)) +
+  labs(title = "Leadership PAC Donations and\nCongress Representation Over Time",
+       x = "Year",
+       y = "Representation (%)",
+       color = "Party",
+       linetype = "Lines",
+       caption = "OpenSecrets.org (2021)") +
+  scale_y_continuous(labels = scales::percent_format(accuracy=1),
+                     limits = c(.2, .8)) +
+  scale_color_manual(values = c("blue", "red"))
+```
+
 
 
 

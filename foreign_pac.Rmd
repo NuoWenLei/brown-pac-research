@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(ggthemes)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -16,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r party-donation-clean, echo = FALSE}
 foreign_data = read_csv("data/foreign_pac_data/clean_data.csv")
 
-clean_data = foreign_data %>% 
+foreign_clean_data = foreign_data %>% 
   group_by(year) %>% 
   summarize(total = sum(dems_sum) + sum(repubs_sum),
             dem = sum(dems_sum),
@@ -29,18 +30,104 @@ clean_data = foreign_data %>%
     names_to = "party",
     values_to = "amount"
   )
-clean_data
 ```
 
-```{r donation-plot, echo = FALSE}
-ggplot(clean_data, aes(x = year, y = amount, color = party)) + 
-  geom_line() + 
-  scale_color_manual(
-    values = c("blue", "red")
-  )
+```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSE}
+house_senate_data = read_csv("data/house_senate.csv")
+
+house_senate_clean_data = house_senate_data %>% 
+  pivot_longer(cols = -year, names_to = "position", values_to = "seats") %>% 
+  mutate(
+    party = gsub("\\_.*", "", position),
+    pos_type = gsub(".*\\_", "", substr(position, 1, nchar(position)-2))
+  ) %>% 
+  group_by(pos_type, year) %>% 
+  summarize(party = party,
+            seat_total = seats,
+            seats = seats / sum(seats),
+            .groups = "drop")
 ```
 
-```{r hist-plot, echo = FALSE}
-ggplot(clean_data, aes(x = total)) +
-  geom_histogram(bins = 8)
+
+```{r}
+house_senate_bound = rbind(foreign_clean_data %>% 
+  mutate(party = ifelse(party == "dem_percent", "democratic", "republican"),
+         pos_type = "donations") %>% 
+  rename(
+    seats = amount
+  ) %>% 
+  select(pos_type, year, party, seats),
+  house_senate_clean_data %>% 
+    select(pos_type, year, party, seats))
+
+house_senate_bound
+```
+
+```{r big-line-plot, echo = FALSE}
+ggplot(house_senate_bound, aes(x=year, y=seats, color=party)) +
+  geom_line(aes(linetype=pos_type)) +
+  facet_wrap(~party) +
+  theme_clean() +
+  theme(axis.text.x = element_text(angle=-60, hjust=0)) +
+  labs(title = "Foreign PAC Donations and\nCongress Representation Over Time",
+       x = "Year",
+       y = "Representation (%)",
+       color = "Party",
+       linetype = "Lines",
+       caption = "OpenSecrets.org (2021)") +
+  scale_y_continuous(labels = scales::percent_format(accuracy=1),
+                     limits = c(.2, .8)) +
+  scale_color_manual(values = c("blue", "red"))
+```
+
+```{r top-5-countries}
+top_5_donate_countries = foreign_data %>%
+  group_by(country) %>%
+  summarize(t = sum(total_sum), .groups = "drop") %>% 
+  arrange(desc(t)) %>% 
+  slice(1:5) %>% 
+  pull(country)
+
+top_5_foreign_data_bound = rbind(foreign_data %>% 
+  filter(country %in% top_5_donate_countries) %>% 
+  mutate(
+    total = dems_sum + repubs_sum,
+    democratic = dems_sum / total,
+    republican = repubs_sum / total
+  ) %>% 
+  rename(
+    pos_type = country
+  ) %>% 
+  pivot_longer(cols = c(democratic, republican),
+               names_to = "party",
+               values_to = "seats") %>% 
+    select(pos_type, year, party, seats),
+  house_senate_clean_data %>% 
+    select(pos_type, year, party, seats)) %>%
+  filter(party == "democratic") %>%
+  mutate(pos_type = factor(pos_type, levels = c(
+    "house",
+    "senate",
+    top_5_donate_countries
+  ))) %>% 
+  arrange(pos_type) %>% 
+  select(-party)
+
+```
+
+```{r line-plot-by-country, echo = FALSE}
+ggplot(top_5_foreign_data_bound, aes(x=year, y=seats, color=pos_type, alpha = pos_type)) +
+  geom_line() +
+  theme_clean() +
+  scale_alpha_manual(values = c(1,1,.3,.3,.3,.3,.3)) +
+  theme(axis.text.x = element_text(angle=-60, hjust=0)) +
+  labs(title = "Top 5 Foreign Donation Countries and\nCongress Representation Over Time",
+       x = "Year",
+       y = "Representation (%)",
+       color = "Position",
+       caption = "OpenSecrets.org (2021)") +
+  scale_y_continuous(labels = scales::percent_format(accuracy=1),
+                     limits = c(.2, .8)) +
+  guides(alpha = "none")
+  
 ```

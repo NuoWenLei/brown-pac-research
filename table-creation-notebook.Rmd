@@ -9,7 +9,7 @@ library(tidyverse)
 ```
 
 
-```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSE}
+```{r load-house_senate, echo = FALSE, warning = FALSE, message = FALSEE}
 house_senate_data = read_csv("data/house_senate.csv")
 
 house_senate_clean_data = house_senate_data %>% 
@@ -69,23 +69,23 @@ top_house_industries = c("Dairy",
                          "Air Transport",
                          "Energy & Natural Resources",
                          "Building Materials & Equipment")
-ind1 = industry_clean_data %>%
+ind1_h = industry_clean_data %>%
     filter(industry_name == "Dairy") %>%
     pull(dem_percent)
 
-ind2 = industry_clean_data %>%
+ind2_h = industry_clean_data %>%
     filter(industry_name == "Vegetables, fruits and tree nut") %>%
     pull(dem_percent)
 
-ind3 = industry_clean_data %>%
+ind3_h = industry_clean_data %>%
     filter(industry_name == "Air Transport") %>%
     pull(dem_percent)
 
-ind4 = industry_clean_data %>%
+ind4_h = industry_clean_data %>%
     filter(industry_name == "Energy & Natural Resources") %>%
     pull(dem_percent)
 
-ind5 = industry_clean_data %>%
+ind5_h = industry_clean_data %>%
     filter(industry_name == "Building Materials & Equipment") %>%
     pull(dem_percent)
 
@@ -93,13 +93,13 @@ curr_gov = house_senate_clean_data %>%
     filter(party == "democratic",
            pos_type == "house") %>% 
     pull(seats)
-fit1 = lm(curr_gov~ind1)
-fit2 = lm(curr_gov~ind2)
-fit3 = lm(curr_gov~ind3)
-fit4 = lm(curr_gov~ind4)
-fit5 = lm(curr_gov~ind5)
+fit1_h = lm(curr_gov~ind1_h)
+fit2_h = lm(curr_gov~ind2_h)
+fit3_h = lm(curr_gov~ind3_h)
+fit4_h = lm(curr_gov~ind4_h)
+fit5_h = lm(curr_gov~ind5_h)
 
-tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+tab_model(fit1_h, fit2_h, fit3_h, fit4_h, fit5_h, show.ci = FALSE)
 ```
 
 ```{r}
@@ -110,23 +110,23 @@ top_senate_industries = c(
   "Telecom Services",
   "Forestry & Forest Products"
 )
-ind1 = industry_clean_data %>%
+ind1_s = industry_clean_data %>%
     filter(industry_name == "Lobbyists") %>%
     pull(dem_percent)
 
-ind2 = industry_clean_data %>%
+ind2_s = industry_clean_data %>%
     filter(industry_name == "Savings & Loans") %>%
     pull(dem_percent)
 
-ind3 = industry_clean_data %>%
+ind3_s = industry_clean_data %>%
     filter(industry_name == "Business Services") %>%
     pull(dem_percent)
 
-ind4 = industry_clean_data %>%
+ind4_s = industry_clean_data %>%
     filter(industry_name == "Telecom Services") %>%
     pull(dem_percent)
 
-ind5 = industry_clean_data %>%
+ind5_s = industry_clean_data %>%
     filter(industry_name == "Forestry & Forest Products") %>%
     pull(dem_percent)
 
@@ -134,13 +134,19 @@ curr_gov = house_senate_clean_data %>%
     filter(party == "democratic",
            pos_type == "senate") %>% 
     pull(seats)
-fit1 = lm(curr_gov~ind1)
-fit2 = lm(curr_gov~ind2)
-fit3 = lm(curr_gov~ind3)
-fit4 = lm(curr_gov~ind4)
-fit5 = lm(curr_gov~ind5)
+fit1_s = lm(curr_gov~ind1_s)
+fit2_s = lm(curr_gov~ind2_s)
+fit3_s = lm(curr_gov~ind3_s)
+fit4_s = lm(curr_gov~ind4_s)
+fit5_s = lm(curr_gov~ind5_s)
 
-tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+tab_model(fit1_s, fit2_s, fit3_s, fit4_s, fit5_s, show.ci = FALSE)
+```
+
+```{r}
+tab_model(fit1_h, fit2_h, fit3_h, fit4_h, fit5_h,
+          fit1_s, fit2_s, fit3_s, fit4_s, fit5_s,
+          show.ci = FALSE)
 ```
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
@@ -169,23 +175,23 @@ top_house_countries = c(
   "Canada",
   "Germany"
 )
-cty1 = foreign_percent_data %>%
+cty1_h = foreign_percent_data %>%
     filter(country == "France") %>%
     pull(dem_percent)
 
-cty2 = foreign_percent_data %>%
+cty2_h = foreign_percent_data %>%
     filter(country == "UK") %>%
     pull(dem_percent)
 
-cty3 = foreign_percent_data %>%
+cty3_h = foreign_percent_data %>%
     filter(country == "Netherlands") %>%
     pull(dem_percent)
 
-cty4 = foreign_percent_data %>%
+cty4_h = foreign_percent_data %>%
     filter(country == "Canada") %>%
     pull(dem_percent)
 
-cty5 = foreign_percent_data %>%
+cty5_h = foreign_percent_data %>%
     filter(country == "Germany") %>%
     pull(dem_percent)
 
@@ -193,13 +199,13 @@ curr_gov = house_senate_clean_data %>%
     filter(party == "democratic",
            pos_type == "house") %>% 
     pull(seats)
-fit1 = lm(curr_gov~cty1)
-fit2 = lm(curr_gov~cty2)
-fit3 = lm(curr_gov~cty3)
-fit4 = lm(curr_gov~cty4)
-fit5 = lm(curr_gov~cty5)
+fit1_h = lm(curr_gov~cty1_h)
+fit2_h = lm(curr_gov~cty2_h)
+fit3_h = lm(curr_gov~cty3_h)
+fit4_h = lm(curr_gov~cty4_h)
+fit5_h = lm(curr_gov~cty5_h)
 
-tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+tab_model(fit1_h, fit2_h, fit3_h, fit4_h, fit5_h, show.ci = FALSE)
 ```
 
 ```{r}
@@ -211,23 +217,23 @@ top_senate_countries = c(
   "Germany"
 )
 
-cty1 = foreign_percent_data %>%
+cty1_s = foreign_percent_data %>%
     filter(country == "UK") %>%
     pull(dem_percent)
 
-cty2 = foreign_percent_data %>%
+cty2_s = foreign_percent_data %>%
     filter(country == "France") %>%
     pull(dem_percent)
 
-cty3 = foreign_percent_data %>%
+cty3_s = foreign_percent_data %>%
     filter(country == "Denmark") %>%
     pull(dem_percent)
 
-cty4 = foreign_percent_data %>%
+cty4_s = foreign_percent_data %>%
     filter(country == "Switzerland") %>%
     pull(dem_percent)
 
-cty5 = foreign_percent_data %>%
+cty5_s = foreign_percent_data %>%
     filter(country == "Germany") %>%
     pull(dem_percent)
 
@@ -235,14 +241,21 @@ curr_gov = house_senate_clean_data %>%
     filter(party == "democratic",
            pos_type == "senate") %>% 
     pull(seats)
-fit1 = lm(curr_gov~cty1)
-fit2 = lm(curr_gov~cty2)
-fit3 = lm(curr_gov~cty3)
-fit4 = lm(curr_gov~cty4)
-fit5 = lm(curr_gov~cty5)
+fit1_s = lm(curr_gov~cty2_h)
+fit2_s = lm(curr_gov~cty1_h)
+fit3_s = lm(curr_gov~cty3_s)
+fit4_s = lm(curr_gov~cty4_s)
+fit5_s = lm(curr_gov~cty5_h)
 
-tab_model(fit1, fit2, fit3, fit4, fit5, show.ci = FALSE)
+tab_model(fit1_s, fit2_s, fit3_s, fit4_s, fit5_s, show.ci = FALSE)
 ```
+
+```{r}
+tab_model(fit1_h, fit2_h, fit3_h, fit4_h, fit5_h,
+          fit1_s, fit2_s, fit3_s, fit4_s, fit5_s,
+          show.ci = FALSE)
+```
+
 
 ```{r}
 industry_transposed_data = tibble(a = c(1:11))
@@ -277,6 +290,42 @@ for (cty in unique(foreign_percent_data$country)){
 }
 country_transposed_data
 ```
+```{r}
+inflation_data = read_csv("data/inflation_data.csv")
+inflation_data
+```
+```{r}
+# Use top 5 most donated industries and countries in last decade
+industry_inflation_data = industry_clean_data %>%
+  mutate(total_inflated = total * (inflation_data %>%
+                                     filter(year == year) %>%
+                                     pull(amount))[[1]]) %>%
+  select(industry_name, total_inflated)
+
+country_inflation_data = foreign_data %>%
+  mutate(total_inflated = total_sum * (inflation_data %>%
+                                     filter(year == year) %>% 
+                                     pull(amount))[[1]]) %>% 
+  select(country, total_inflated)
+  
+
+top_5_donate_industries = industry_clean_data %>%
+  group_by(industry_name) %>%
+  summarize(t = sum(total), .groups = "drop") %>%
+  arrange(desc(t)) %>%
+  slice(1:5) %>%
+  pull(industry_name)
+
+top_5_donate_countries = foreign_data %>%
+  group_by(country) %>%
+  summarize(t = sum(total_sum), .groups = "drop") %>% 
+  arrange(desc(t)) %>% 
+  slice(1:5) %>% 
+  pull(country)
+
+print(top_5_donate_industries)
+print(top_5_donate_countries)
+```
 
 ```{r}
 curr_gov = house_senate_clean_data %>% 
@@ -284,7 +333,7 @@ curr_gov = house_senate_clean_data %>%
            pos_type == "house") %>% 
     pull(seats)
 
-fit1 = lm(curr_gov~., data = industry_transposed_data %>% select(top_house_industries))
+fit1 = lm(curr_gov~., data = industry_transposed_data %>% select(top_5_donate_industries))
 
 tab_model(fit1, show.ci = FALSE)
 ```
@@ -295,7 +344,7 @@ curr_gov = house_senate_clean_data %>%
            pos_type == "senate") %>% 
     pull(seats)
 
-fit2 = lm(curr_gov~., data = industry_transposed_data %>% select(top_senate_industries))
+fit2 = lm(curr_gov~., data = industry_transposed_data %>% select(top_5_donate_industries))
 
 tab_model(fit2, show.ci = FALSE)
 ```
@@ -312,7 +361,7 @@ curr_gov = house_senate_clean_data %>%
            pos_type == "house") %>% 
     pull(seats)
 
-fit3 = lm(curr_gov~., data = country_transposed_data %>% select(top_house_countries))
+fit3 = lm(curr_gov~., data = country_transposed_data %>% select(top_5_donate_countries))
 
 tab_model(fit3, show.ci = FALSE)
 ```
@@ -323,11 +372,38 @@ curr_gov = house_senate_clean_data %>%
            pos_type == "senate") %>% 
     pull(seats)
 
-fit4 = lm(curr_gov~., data = country_transposed_data %>% select(top_senate_countries))
+fit4 = lm(curr_gov~., data = country_transposed_data %>% select(top_5_donate_countries))
 
 tab_model(fit4, show.ci = FALSE)
 ```
 
 ```{r}
 tab_model(fit3, fit4, show.ci = FALSE)
+```
+
+```{r}
+tbl = tibble(
+  `Leadership PACs` = leadership_clean_data %>% filter(
+    party == "dem_percent") %>%
+    pull(amount),
+  `Foreign PACs` = foreign_clean_data %>% filter(
+    party == "dem_percent") %>% 
+    pull(amount)
+  )
+
+house = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "house") %>% 
+    pull(seats)
+
+senate = house_senate_clean_data %>% 
+    filter(party == "democratic",
+           pos_type == "senate") %>% 
+    pull(seats)
+
+fit1 = lm(house~., data = tbl)
+fit2 = lm(senate~., data = tbl)
+
+tab_model(fit1, fit2, show.ci = FALSE)
+
 ```
