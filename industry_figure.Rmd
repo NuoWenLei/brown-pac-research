@@ -1,0 +1,65 @@
+---
+title: "industry figure"
+author: "Nuo Wen Lei"
+date: "9/9/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggthemes)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-industry, echo = FALSE, warning = FALSE, message = FALSE}
+industry_data = read_csv("data/industry_donation_data/clean_data.csv")
+
+industry_clean_data = industry_data %>% 
+  mutate(dem_percent = dem / total,
+         repub_percent = repub / total)
+
+```
+
+```{r echo = FALSE}
+industry_clean_data = industry_clean_data %>% 
+  mutate(industry_name = stringr::str_wrap(industry_name, 20))
+  
+
+top_5_donate_industries = industry_clean_data %>%
+  group_by(industry_name) %>%
+  summarize(t = sum(total), .groups = "drop") %>%
+  arrange(desc(t)) %>%
+  slice(1:5) %>%
+  pull(industry_name)
+
+top_5_industry_data_bound = industry_clean_data %>%
+  filter(industry_name %in% top_5_donate_industries) %>%
+  rename(
+    democratic = dem_percent,
+    republican = repub_percent,
+    pos_type = industry_name
+  ) %>%
+  pivot_longer(cols = c(democratic, republican),
+               names_to = "party",
+               values_to = "percent") %>%
+    select(pos_type, year, party, percent) %>%
+  filter(party == "democratic") %>%
+  mutate(pos_type = factor(pos_type, levels = top_5_donate_industries)) %>%
+  arrange(pos_type) %>%
+  select(-party)
+
+```
+
+```{r}
+ggplot(top_5_industry_data_bound, aes(x = year, y = percent, color = pos_type)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::percent_format(accuracy=1),
+                     limits = c(.2, .8)) +
+  labs(title = "Top 5 Industries by Donation",
+       x = "Year",
+       y = "Representation (%)",
+       color = "Industry",
+       caption = "OpenSecrets.org (2021)") +
+  theme_clean() +
+  theme(axis.text.x = element_text(angle=-60, hjust=0))
+
+```
